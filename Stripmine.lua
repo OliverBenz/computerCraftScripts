@@ -43,8 +43,8 @@ function placeTorch()
         turtle.select(slotTorch)
         turtle.place()
                                 
-        turtle.turnRight()
-        turtle.turnRight()
+        turtle.turnLeft()
+        turtle.turnLeft()
 end
 
 function move(length)
