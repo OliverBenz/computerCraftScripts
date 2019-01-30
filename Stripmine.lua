@@ -36,19 +36,39 @@ print("Turtle ready")
 -- Starting position: Bottom
 turtle.up()
 
-function placeTorch()
+function place(slot)
         turtle.turnRight()
         turtle.turnRight()
 
-        turtle.select(slotTorch)
+        turtle.select(slot)
         turtle.place()
                                 
         turtle.turnLeft()
         turtle.turnLeft()
 end
 
+function store(slot)
+        turtle.select(slotChestShit)
+        turtle.placeDown()
+
+        turtle.select(slot)
+        turtle.dropDown()
+
+        turtle.digDown()
+end
+
+function getFuel()
+        turtle.select(slotChestFuel)
+        turtle.placeDown()
+
+        turtle.select(slotFuel)
+        turtle.suckDown(63)
+        turtle.digDown()
+end
+
 function move(length)
         for i = 1, length do
+                -- Basic Movement
                 if turtle.detect() == true then
                         turtle.dig()
                 end
@@ -72,9 +92,23 @@ function move(length)
                 -- TODO: move efficient: i is a multiple of torchDistance
                 for a = 0, torchDistance * torchDistance do
                         if i = a * torchDistance then
-                                placeTorch()
+                                place(slotTorch)
                         end
                 end
+
+                -- If a slot is full -> store in ender chest
+                for a = 5, 12 do
+                        if turtle.getItemSpace(a) == 0 then
+                                store(a);
+                        end
+                end
+
+                -- If fuel slot is empty -> refuel
+                if turtle.getItemCount(slotFuel) == 1 then
+                        getFuel()
+                end
+
+                -- TODO: Detect and mine specific ores
         end
 end
 
