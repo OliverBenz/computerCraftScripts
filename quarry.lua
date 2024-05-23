@@ -1,11 +1,6 @@
 -- TODO: 
--- Chest to empty inventory at each layer or just when full?
--- Handle TODOs and not yet implemented stuff
-
--- Globals
-S_FUEL  = 1
-S_TORCH = 2
-S_CHEST = 3
+-- -> Place chest once inventory full
+-- -> Handle TODOs and not yet implemented stuff
 
 -- User setup
 write("Length of Quarray: ")
@@ -20,7 +15,7 @@ INP_Z = tonumber(read())   -- Destination Z coord
 
 
 -- Turtle global coordinates
-DST   = {INP_X, INP_Y, INP_Z}
+DST   = {INP_X, INP_Y, INP_Z}  -- Destination is within boundary "-1"
 tPos  = {0, 0, 0}
 tFace = {0, 1, 0}  -- Direction where it's facing
 
@@ -44,6 +39,7 @@ end
 -- such that DST.x and DST.y are positive
 function initialize()
 	write("Initializing \n")
+
 	if DST[1] < 0 and DST[2] > 0 then
 		initTurn()
 	end
@@ -57,6 +53,10 @@ function initialize()
 		initturn()
 	end
 	-- else: orientation already ok
+	
+	-- Dont include border
+	DST[1] = DST[1]-1
+	DST[2] = DST[2]-1
 end
 
 
@@ -110,6 +110,76 @@ function turn(dir)
 	tFace = dir
 end
 
+function isOre(element)
+	local ores = {
+		"minecraft:coal",
+		"minecraft:iron_ore",
+		"minecraft:gold_ore", 
+		"minecraft:diamond_ore",
+		"minecraft:raw_copper",
+		"minecraft:raw_gold",
+		"minecraft:raw_iron",
+		"minecraft:diamond",
+		"indrev:raw_tungsten",
+		"techreborn:raw_silver",
+		"techreborn:raw_tin",
+		"mythicmetals:raw_platinum",
+		"create:raw_zinc",
+		"techreborn:red_garnet_gem",
+		"techreborn:ruby_gem",
+		"techreborn:sapphire_gem",
+		"mythicmetals:raw_osmium",
+		"mythicmetals:raw_banglum"
+	}
+
+	for _, value in pairs(ores) do
+        if value == element then
+            return true
+        end
+    end
+    return false
+end
+
+function isFuel(element)
+	local fuelTypes = {
+		"minecraft:coal",
+		"minecraft:charcoal"
+	}
+
+	for _, value in pairs(ores) do
+        if value == element then
+            return true
+        end
+    end
+    return false
+
+end
+
+-- Fix for when gravel falls down blocking the turtle
+function digForward()
+	while turtle.detect() do
+		turtle.dig()
+	end
+end
+
+-- Fuel always at pos 1
+-- Returns: false if it needs fuel and could not refuel
+function refuel()
+	if turtle.getFuelLevel() > 1 then
+		return True
+	end
+
+	for i=1,16 do
+    	local data = turtle.getItemDetail(i)
+    	if data and isFuel(data.name) then
+    	    turtle.select(i)
+			turtle.refuel(1)
+			return True
+    	end
+    end
+	return False
+end
+
 -- destination in global coordinates
 function mineTo(dest)
 	local diff = {dest[1] - tPos[1], dest[2] - tPos[2], dest[3] - tPos[3]}
@@ -122,12 +192,12 @@ function mineTo(dest)
 		local dir = diff[1]/abs(diff[1])
 		turn({dir,0,0})
 		for i=1,abs(diff[1]) do
-			if turtle.detect() then
-				turtle.dig()
-			end
+			digForward()
 
 			turtle.forward()
 			tPos[1] = tPos[1] + dir -- Update turt pos +- 1
+
+			refuel() -- TODO: Handle case if could not refuel
 		end
 	end
 	
@@ -136,12 +206,12 @@ function mineTo(dest)
 		local dir = diff[2]/abs(diff[2])
 		turn({0,dir,0})
 		for i=1,abs(diff[2]) do
-			if turtle.detect() then
-				turtle.dig()
-			end
+			digForward()
 
 			turtle.forward()
 			tPos[2] = tPos[2] + dir -- Update turt pos +- 1
+
+			refuel() -- TODO: Handle case if could not refuel
 		end
 	end
 
@@ -156,10 +226,23 @@ function mineTo(dest)
 
 			turtle.up()
 			tPos[3] = tPos[3] + dir
+
+			refuel() -- TODO: Handle case if could not refuel
 		end
 	end
 end
 
+
+function clearInventory()
+	for i=1,16 do -- loop over all inventory slots
+        local data = turtle.getItemDetail(i) -- get the details of the item in the slot
+        if data and not isOre(data.name) then -- if the item is not an ore
+            turtle.select(i) -- select the slot
+            turtle.drop() -- drop the item
+        end
+    end
+	turtle.select(1)
+end
 
 function mineLayer()
 	-- Mine one layer in given interval
@@ -168,6 +251,7 @@ function mineLayer()
 		mineTo({x,   DST[2], tPos[3]})
 		mineTo({x+1, DST[2], tPos[3]})
 		mineTo({x+1, 0,      tPos[3]})
+		clearInventory()
 	end
 
 	-- Make sure we do last line
@@ -223,8 +307,13 @@ end
 -- 	turn({0,1,0})
 -- end
 
+-- clearInventory()
+
+
 -- Setup
-turtle.refuel()
+refuel()
+-- turtle.refuel(1)
+refuel()
 initialize()
 
 mineCube()
