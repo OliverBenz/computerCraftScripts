@@ -146,7 +146,7 @@ function isFuel(element)
 		"minecraft:charcoal"
 	}
 
-	for _, value in pairs(ores) do
+	for _, value in pairs(fuelTypes) do
         if value == element then
             return true
         end
@@ -234,11 +234,11 @@ end
 
 
 function clearInventory()
-	for i=1,16 do -- loop over all inventory slots
-        local data = turtle.getItemDetail(i) -- get the details of the item in the slot
-        if data and not isOre(data.name) then -- if the item is not an ore
-            turtle.select(i) -- select the slot
-            turtle.drop() -- drop the item
+	for i=1,16 do
+        local data = turtle.getItemDetail(i)
+        if data and not isOre(data.name) and not isFuel(data.name) then
+            turtle.select(i)
+            turtle.drop()
         end
     end
 	turtle.select(1)
@@ -311,8 +311,6 @@ end
 
 
 -- Setup
-refuel()
--- turtle.refuel(1)
 refuel()
 initialize()
 
